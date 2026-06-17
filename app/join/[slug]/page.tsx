@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { JoinCard } from "./join-card";
+import { JoinGate } from "./join-gate";
 
 export default async function JoinPage({
   params,
@@ -21,7 +22,13 @@ export default async function JoinPage({
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect(`/login?redirectTo=/join/${slug}`);
+    return (
+      <JoinGate
+        courseTitle={course.title}
+        courseCode={course.code}
+        slug={slug}
+      />
+    );
   }
 
   const { data: profile } = await supabase

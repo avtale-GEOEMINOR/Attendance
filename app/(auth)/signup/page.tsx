@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button, Input, Label, Card } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirectTo");
   const supabase = createClient();
 
   const [role, setRole] = useState<"student" | "faculty">("student");
@@ -62,10 +64,20 @@ export default function SignupPage() {
 
     if (role === "faculty") {
       setSuccess(true);
-    } else {
-      router.push("/student");
-      router.refresh();
+      return;
     }
+
+    // If email confirmation is required, there's no session yet — send
+    // the student to login (preserving redirectTo) instead of the dashboard.
+    if (!data.session) {
+      router.push(
+        `/login${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ""}`
+      );
+      return;
+    }
+
+    router.push(redirectTo ?? "/student");
+    router.refresh();
   }
 
   if (success) {
@@ -197,11 +209,22 @@ export default function SignupPage() {
 
         <p className="text-sm text-muted mt-6 text-center">
           Already have an account?{" "}
-          <Link href="/login" className="text-brass-dark font-medium hover:underline">
+          <Link
+            href={`/login${redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ""}`}
+            className="text-brass-dark font-medium hover:underline"
+          >
             Sign in
           </Link>
         </p>
       </Card>
     </main>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   );
 }
