@@ -1,0 +1,65 @@
+@import "tailwindcss";
+
+:root {
+  /* Core palette — the "register" aesthetic */
+  --color-ink: #1c2541;        /* primary text / headers */
+  --color-parchment: #f7f4ed;  /* page background */
+  --color-paper: #ffffff;      /* card surfaces */
+  --color-brass: #a98b4c;      /* accent: active, present, links */
+  --color-brass-dark: #8a6f38;
+  --color-rose: #c44545;       /* absent / destructive */
+  --color-sage: #5b7a5b;       /* approved / success */
+  --color-line: #ddd6c4;       /* hairline rules / borders */
+  --color-muted: #6b6456;      /* secondary text */
+
+  --background: var(--color-parchment);
+  --foreground: var(--color-ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-ink: var(--color-ink);
+  --color-parchment: var(--color-parchment);
+  --color-paper: var(--color-paper);
+  --color-brass: var(--color-brass);
+  --color-brass-dark: var(--color-brass-dark);
+  --color-rose: var(--color-rose);
+  --color-sage: var(--color-sage);
+  --color-line: var(--color-line);
+  --color-muted: var(--color-muted);
+
+  --font-display: "Iowan Old Style", "Palatino Linotype", "URW Palladio L", P052, serif;
+  --font-sans: "Inter", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-mono: "SF Mono", "Cascadia Code", "Roboto Mono", Consolas, monospace;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Hairline rule used under headers — the "register" signature */
+.ledger-rule {
+  border-bottom: 1px solid var(--color-line);
+}
+
+.ledger-rule-thick {
+  border-bottom: 2px solid var(--color-ink);
+}
+
+/* Tally mark fraction — signature element for attendance percentage */
+.tally-mark {
+  font-family: var(--font-mono), monospace;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
