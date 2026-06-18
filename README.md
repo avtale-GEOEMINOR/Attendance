@@ -43,6 +43,24 @@ This lets the app read/write any Google Sheet that's been shared as
 
 ---
 
+## 2.5. Set up real password reset emails (Resend)
+
+Supabase's built-in email sender is rate-limited and meant for testing only — for real password reset emails to reach faculty and students reliably, connect a proper email provider. [Resend](https://resend.com) has a free tier (100 emails/day, 3,000/month) that's plenty for one course.
+
+1. Go to [resend.com](https://resend.com) -> sign up for a free account.
+2. Go to **API Keys** -> **Create API Key** -> copy the key shown (starts with `re_...`).
+3. **Domain setup** — Resend needs a domain to send from. The simplest path for testing: skip domain verification entirely and use Resend's shared `onboarding@resend.dev` sending address (works immediately, no DNS setup, fine for low volume). If you want emails from your own domain instead (e.g. `noreply@yourcollege.edu`) and you own that domain, go to **Domains** -> **Add Domain** and follow the DNS records it gives you to add at your domain registrar — this takes longer (DNS propagation) and isn't necessary to get started.
+4. In Supabase, go to **Project Settings -> Authentication -> SMTP Settings** (sometimes found under **Authentication -> Settings -> SMTP Provider**). Enable custom SMTP and fill in:
+   - **Host:** `smtp.resend.com`
+   - **Port:** `465` (or `587`)
+   - **Username:** `resend`
+   - **Password:** your Resend API key from step 2
+   - **Sender email:** `onboarding@resend.dev` (or your verified domain address from step 3)
+   - **Sender name:** anything, e.g. "Register Attendance"
+5. Save. Supabase will now send password reset (and signup confirmation, if you turn that back on) emails through Resend instead of its limited built-in sender.
+
+---
+
 ## 3. Deploy to Vercel (free)
 
 1. Push this project to a GitHub repo (Vercel deploys from Git).
@@ -81,6 +99,10 @@ Go to `https://your-app.vercel.app/admin`, enter the `ADMIN_PASSWORD` you set, a
 2. Sign up (or sign in) as a Student, then tap **Request to join**.
 3. Wait for faculty approval — check your dashboard.
 4. Once approved, view your own attendance record under the course.
+
+**Forgot or want to change a password:**
+- From the sign-in page, tap **Forgot password?** to get a reset link by email (requires the Resend setup above).
+- While signed in, both faculty and students can tap **Account** in the header at any time to set a new password without needing the email link.
 
 ---
 

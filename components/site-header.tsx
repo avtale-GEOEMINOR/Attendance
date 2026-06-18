@@ -23,6 +23,12 @@ export function SiteHeader({
             <span className="text-sm text-muted hidden sm:inline">
               {userLabel}
             </span>
+            <Link
+              href="/account"
+              className="text-sm font-medium text-muted hover:text-ink transition-colors"
+            >
+              Account
+            </Link>
             {signOutAction && (
               <form action={signOutAction}>
                 <button
