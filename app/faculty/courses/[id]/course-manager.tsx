@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button, Card, Input, Label } from "@/components/ui";
-import { cn, formatSessionDate } from "@/lib/utils";
+import { cn, formatSessionDate, generateJoinCode, buildRollNumber } from "@/lib/utils";
 import type { Course, Enrollment, Session } from "@/lib/types";
 
 type Tab = "roster" | "sessions" | "settings";
@@ -15,11 +15,13 @@ export function CourseManager({
   enrollments,
   sessions,
   attendanceSummary,
+  facultyCode,
 }: {
   course: Course;
   enrollments: Enrollment[];
   sessions: Session[];
   attendanceSummary: Record<string, { present: number; total: number }>;
+  facultyCode: string | null;
 }) {
   const [tab, setTab] = useState<Tab>("roster");
   const router = useRouter();
@@ -28,11 +30,43 @@ export function CourseManager({
   const pending = enrollments.filter((e) => e.status === "pending");
   const approved = enrollments.filter((e) => e.status === "approved");
 
+  // Courses created before the readable-join-code feature won't have one yet —
+  // generate and save it the first time this page loads for them.
+  const [joinCode, setJoinCode] = useState(course.join_code);
+
+  useEffect(() => {
+    if (joinCode) return;
+
+    async function backfillJoinCode() {
+      const fallbackBase = course.course_code || course.title.slice(0, 3).toUpperCase();
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const candidate = generateJoinCode(
+          fallbackBase,
+          attempt > 0 ? attempt + 1 : undefined
+        );
+        const { error } = await supabase
+          .from("courses")
+          .update({ join_code: candidate })
+          .eq("id", course.id);
+        if (!error) {
+          setJoinCode(candidate);
+          return;
+        }
+      }
+    }
+
+    backfillJoinCode();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [joinCode, course.id]);
+
   const [joinLinkCopied, setJoinLinkCopied] = useState(false);
+  const [joinCodeCopied, setJoinCodeCopied] = useState(false);
+
+  const joinSlugOrCode = joinCode || course.join_slug || "";
   const joinUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/join/${course.join_slug}`
-      : `/join/${course.join_slug}`;
+      ? `${window.location.origin}/join/${joinSlugOrCode}`
+      : `/join/${joinSlugOrCode}`;
 
   function copyJoinLink() {
     navigator.clipboard.writeText(joinUrl);
@@ -40,13 +74,86 @@ export function CourseManager({
     setTimeout(() => setJoinLinkCopied(false), 2000);
   }
 
+  function copyJoinCode() {
+    if (!joinCode) return;
+    navigator.clipboard.writeText(joinCode);
+    setJoinCodeCopied(true);
+    setTimeout(() => setJoinCodeCopied(false), 2000);
+  }
+
   async function decideEnrollment(enrollmentId: string, status: "approved" | "rejected") {
-    await supabase
-      .from("enrollments")
-      .update({ status, decided_at: new Date().toISOString() })
-      .eq("id", enrollmentId);
+    if (status === "approved") {
+      // Compute the next sequence number for this course by counting
+      // existing approved enrollments that already have a roll number.
+      const { count } = await supabase
+        .from("enrollments")
+        .select("id", { count: "exact", head: true })
+        .eq("course_id", course.id)
+        .eq("status", "approved")
+        .not("roll_number", "is", null);
+
+      const facultyCodeValue = facultyCode || "FAC";
+      const courseShortCode = course.course_code || "CRS";
+      const nextSeq = (count ?? 0) + 1;
+      const rollNumber = buildRollNumber(facultyCodeValue, courseShortCode, nextSeq);
+
+      await supabase
+        .from("enrollments")
+        .update({
+          status,
+          decided_at: new Date().toISOString(),
+          roll_number: rollNumber,
+        })
+        .eq("id", enrollmentId);
+    } else {
+      await supabase
+        .from("enrollments")
+        .update({ status, decided_at: new Date().toISOString() })
+        .eq("id", enrollmentId);
+    }
     router.refresh();
   }
+
+  const [backfilling, setBackfilling] = useState(false);
+
+  async function backfillRollNumbers() {
+    setBackfilling(true);
+
+    const { data: missing } = await supabase
+      .from("enrollments")
+      .select("id")
+      .eq("course_id", course.id)
+      .eq("status", "approved")
+      .is("roll_number", null)
+      .order("requested_at", { ascending: true });
+
+    if (missing && missing.length > 0) {
+      const { count } = await supabase
+        .from("enrollments")
+        .select("id", { count: "exact", head: true })
+        .eq("course_id", course.id)
+        .eq("status", "approved")
+        .not("roll_number", "is", null);
+
+      const facultyCodeValue = facultyCode || "FAC";
+      const courseShortCode = course.course_code || "CRS";
+      let nextSeq = (count ?? 0) + 1;
+
+      for (const row of missing) {
+        const rollNumber = buildRollNumber(facultyCodeValue, courseShortCode, nextSeq);
+        await supabase
+          .from("enrollments")
+          .update({ roll_number: rollNumber })
+          .eq("id", row.id);
+        nextSeq++;
+      }
+    }
+
+    setBackfilling(false);
+    router.refresh();
+  }
+
+  const studentsMissingRoll = approved.filter((e) => !e.roll_number);
 
   const [showSessionForm, setShowSessionForm] = useState(false);
   const [newSessionDate, setNewSessionDate] = useState(
@@ -84,13 +191,20 @@ export function CourseManager({
             <p className="font-mono text-xs text-muted mt-1">{course.code}</p>
           )}
         </div>
-        <Card className="px-4 py-3 shrink-0">
-          <p className="text-xs text-muted mb-1">Share to enroll</p>
+        <Card className="px-4 py-3 shrink-0 text-right">
+          <p className="text-xs text-muted mb-1">Join code</p>
+          <button
+            onClick={copyJoinCode}
+            disabled={!joinCode}
+            className="font-mono text-lg font-semibold text-brass-dark hover:underline tally-mark"
+          >
+            {joinCodeCopied ? "Copied!" : joinCode || "…"}
+          </button>
           <button
             onClick={copyJoinLink}
-            className="font-mono text-xs text-brass-dark hover:underline"
+            className="block text-xs text-muted hover:text-ink mt-1.5"
           >
-            {joinLinkCopied ? "Copied!" : joinUrl.replace(/^https?:\/\//, "")}
+            {joinLinkCopied ? "Link copied!" : "or copy full link"}
           </button>
         </Card>
       </div>
@@ -165,9 +279,23 @@ export function CourseManager({
           )}
 
           <section>
-            <h2 className="text-sm font-semibold text-ink mb-3">
-              Enrolled students ({approved.length})
-            </h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-ink">
+                Enrolled students ({approved.length})
+              </h2>
+              {studentsMissingRoll.length > 0 && (
+                <Button
+                  variant="secondary"
+                  onClick={backfillRollNumbers}
+                  disabled={backfilling}
+                  className="!py-1.5 !px-3 text-xs"
+                >
+                  {backfilling
+                    ? "Assigning…"
+                    : `Assign roll numbers (${studentsMissingRoll.length})`}
+                </Button>
+              )}
+            </div>
             {approved.length === 0 ? (
               <p className="text-sm text-muted">
                 No students enrolled yet. Share the join link above.
@@ -177,6 +305,7 @@ export function CourseManager({
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="ledger-rule text-left text-xs uppercase tracking-wide text-muted">
+                      <th className="px-4 py-3 font-medium">Roll No</th>
                       <th className="px-4 py-3 font-medium">Name</th>
                       <th className="px-4 py-3 font-medium">Email</th>
                       <th className="px-4 py-3 font-medium">Program</th>
@@ -192,6 +321,9 @@ export function CourseManager({
                           : null;
                       return (
                         <tr key={e.id} className="ledger-rule last:border-0">
+                          <td className="px-4 py-3 text-ink font-mono text-xs">
+                            {e.roll_number ?? "—"}
+                          </td>
                           <td className="px-4 py-3 text-ink font-medium">
                             {e.profiles?.full_name}
                           </td>

@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
 
   interface EnrollmentWithProfile {
     student_id: string;
+    roll_number: string | null;
     profiles: {
       full_name: string | null;
       email: string | null;
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
 
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("student_id, profiles(full_name, email, enrollment_no, program)")
+    .select("student_id, roll_number, profiles(full_name, email, enrollment_no, program)")
     .eq("course_id", courseId)
     .eq("status", "approved")
     .overrideTypes<EnrollmentWithProfile[]>();
@@ -75,6 +76,7 @@ export async function POST(req: NextRequest) {
   });
 
   const header = [
+    "Roll Number",
     "Name",
     "Email",
     "Enrollment No",
@@ -97,6 +99,7 @@ export async function POST(req: NextRequest) {
     const pct = Math.round((presentCount / sessions.length) * 100);
 
     rows.push([
+      e.roll_number ?? "",
       profile?.full_name ?? "",
       profile?.email ?? "",
       profile?.enrollment_no ?? "",

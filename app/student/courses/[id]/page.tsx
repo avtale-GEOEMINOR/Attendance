@@ -19,7 +19,7 @@ export default async function StudentCoursePage({
     .select("*, courses(*)")
     .eq("course_id", id)
     .eq("student_id", user!.id)
-    .single<{ status: string; courses: Course }>();
+    .single<{ status: string; roll_number: string | null; courses: Course }>();
 
   if (!enrollment || enrollment.status !== "approved") {
     redirect("/student");
@@ -62,6 +62,11 @@ export default async function StudentCoursePage({
           </h1>
           {course.code && (
             <p className="font-mono text-xs text-muted mt-1">{course.code}</p>
+          )}
+          {enrollment.roll_number && (
+            <p className="font-mono text-xs text-brass-dark mt-1">
+              Roll No: {enrollment.roll_number}
+            </p>
           )}
         </div>
         {pct !== null && (

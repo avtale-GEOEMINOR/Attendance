@@ -125,8 +125,8 @@ export function AttendanceSheet({
                 )}
               >
                 <div className="flex items-center gap-4">
-                  <span className="font-mono text-xs text-muted w-6">
-                    {i + 1}.
+                  <span className="font-mono text-xs text-muted w-16 shrink-0">
+                    {s.roll_number ?? `#${i + 1}`}
                   </span>
                   <div>
                     <p className="text-sm font-medium text-ink">

@@ -9,6 +9,7 @@ export interface Profile {
   role: UserRole;
   program: string | null;
   enrollment_no: string | null;
+  faculty_code: string | null;
   is_approved: boolean;
   created_at: string;
 }
@@ -18,7 +19,9 @@ export interface Course {
   faculty_id: string;
   title: string;
   code: string | null;
-  join_slug: string;
+  course_code: string | null;
+  join_slug: string | null;
+  join_code: string | null;
   sheet_url: string | null;
   created_at: string;
 }
@@ -28,6 +31,7 @@ export interface Enrollment {
   course_id: string;
   student_id: string;
   status: EnrollmentStatus;
+  roll_number: string | null;
   requested_at: string;
   decided_at: string | null;
   profiles?: Profile;

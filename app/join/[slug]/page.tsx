@@ -11,11 +11,26 @@ export default async function JoinPage({
   const { slug } = await params;
   const supabase = await createClient();
 
-  const { data: course } = await supabase
-    .from("courses")
-    .select("id, title, code")
-    .eq("join_slug", slug)
-    .single();
+  // Try the new readable join_code first (case-insensitive — people will
+  // type "dm2026" as often as "DM2026"), then fall back to the legacy
+  // random join_slug for any links shared before this change.
+  let course = (
+    await supabase
+      .from("courses")
+      .select("id, title, code")
+      .ilike("join_code", slug)
+      .maybeSingle()
+  ).data;
+
+  if (!course) {
+    course = (
+      await supabase
+        .from("courses")
+        .select("id, title, code")
+        .eq("join_slug", slug)
+        .maybeSingle()
+    ).data;
+  }
 
   if (!course) notFound();
 

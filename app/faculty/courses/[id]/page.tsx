@@ -20,19 +20,26 @@ export default async function FacultyCoursePage({
   if (!course) notFound();
   if (course.faculty_id !== user!.id) redirect("/faculty");
 
-  // Enrollments and sessions are independent of each other — fetch both at once.
-  const [{ data: enrollments }, { data: sessions }] = await Promise.all([
-    supabase
-      .from("enrollments")
-      .select("*, profiles(*)")
-      .eq("course_id", id)
-      .order("requested_at", { ascending: false }),
-    supabase
-      .from("sessions")
-      .select("*")
-      .eq("course_id", id)
-      .order("session_date", { ascending: false }),
-  ]);
+  // Enrollments, sessions, and the faculty's own profile (for faculty_code)
+  // are all independent — fetch together.
+  const [{ data: enrollments }, { data: sessions }, { data: facultyProfile }] =
+    await Promise.all([
+      supabase
+        .from("enrollments")
+        .select("*, profiles(*)")
+        .eq("course_id", id)
+        .order("requested_at", { ascending: false }),
+      supabase
+        .from("sessions")
+        .select("*")
+        .eq("course_id", id)
+        .order("session_date", { ascending: false }),
+      supabase
+        .from("profiles")
+        .select("faculty_code")
+        .eq("id", course.faculty_id)
+        .single(),
+    ]);
 
   // Attendance summary: total sessions, and per-student present counts
   const approvedStudents = (enrollments ?? []).filter(
@@ -63,6 +70,7 @@ export default async function FacultyCoursePage({
       enrollments={enrollments ?? []}
       sessions={sessions ?? []}
       attendanceSummary={attendanceSummary}
+      facultyCode={facultyProfile?.faculty_code ?? null}
     />
   );
 }
