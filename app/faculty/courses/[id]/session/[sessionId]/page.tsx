@@ -9,36 +9,30 @@ export default async function SessionPage({
 }) {
   const { id, sessionId } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: course } = await supabase
-    .from("courses")
-    .select("*")
-    .eq("id", id)
-    .single();
+  const [{ data: { user } }, { data: course }, { data: session }] =
+    await Promise.all([
+      supabase.auth.getUser(),
+      supabase.from("courses").select("*").eq("id", id).single(),
+      supabase.from("sessions").select("*").eq("id", sessionId).single(),
+    ]);
 
   if (!course) notFound();
   if (course.faculty_id !== user!.id) redirect("/faculty");
-
-  const { data: session } = await supabase
-    .from("sessions")
-    .select("*")
-    .eq("id", sessionId)
-    .single();
-
   if (!session || session.course_id !== id) notFound();
 
-  const { data: enrollments } = await supabase
-    .from("enrollments")
-    .select("*, profiles(*)")
-    .eq("course_id", id)
-    .eq("status", "approved")
-    .order("requested_at", { ascending: true });
-
-  const { data: existingRecords } = await supabase
-    .from("attendance_records")
-    .select("*")
-    .eq("session_id", sessionId);
+  const [{ data: enrollments }, { data: existingRecords }] = await Promise.all([
+    supabase
+      .from("enrollments")
+      .select("*, profiles(*)")
+      .eq("course_id", id)
+      .eq("status", "approved")
+      .order("requested_at", { ascending: true }),
+    supabase
+      .from("attendance_records")
+      .select("*")
+      .eq("session_id", sessionId),
+  ]);
 
   const recordMap = (existingRecords ?? []).reduce((acc, r) => {
     acc[r.student_id] = r.status;

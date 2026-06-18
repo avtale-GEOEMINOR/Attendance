@@ -9,28 +9,30 @@ export default async function FacultyCoursePage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: course } = await supabase
-    .from("courses")
-    .select("*")
-    .eq("id", id)
-    .single();
+  // Run the user check and course fetch in parallel — neither depends on
+  // the other, so there's no reason to wait for one before starting the next.
+  const [{ data: { user } }, { data: course }] = await Promise.all([
+    supabase.auth.getUser(),
+    supabase.from("courses").select("*").eq("id", id).single(),
+  ]);
 
   if (!course) notFound();
   if (course.faculty_id !== user!.id) redirect("/faculty");
 
-  const { data: enrollments } = await supabase
-    .from("enrollments")
-    .select("*, profiles(*)")
-    .eq("course_id", id)
-    .order("requested_at", { ascending: false });
-
-  const { data: sessions } = await supabase
-    .from("sessions")
-    .select("*")
-    .eq("course_id", id)
-    .order("session_date", { ascending: false });
+  // Enrollments and sessions are independent of each other — fetch both at once.
+  const [{ data: enrollments }, { data: sessions }] = await Promise.all([
+    supabase
+      .from("enrollments")
+      .select("*, profiles(*)")
+      .eq("course_id", id)
+      .order("requested_at", { ascending: false }),
+    supabase
+      .from("sessions")
+      .select("*")
+      .eq("course_id", id)
+      .order("session_date", { ascending: false }),
+  ]);
 
   // Attendance summary: total sessions, and per-student present counts
   const approvedStudents = (enrollments ?? []).filter(

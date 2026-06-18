@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button, Card } from "@/components/ui";
-import { cn } from "@/lib/utils";
+import { cn, formatSessionDate } from "@/lib/utils";
 import type { Course, Enrollment, Session, AttendanceStatus } from "@/lib/types";
 
 export function AttendanceSheet({
@@ -82,7 +82,7 @@ export function AttendanceSheet({
       <div className="flex items-center justify-between mt-2 mb-6">
         <div>
           <h1 className="font-display text-2xl font-semibold text-ink">
-            {new Date(session.session_date).toLocaleDateString("en-IN", {
+            {formatSessionDate(session.session_date, {
               weekday: "long",
               day: "numeric",
               month: "long",

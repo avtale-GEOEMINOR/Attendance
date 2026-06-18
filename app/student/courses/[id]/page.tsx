@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui";
-import { cn } from "@/lib/utils";
+import { cn, formatSessionDate } from "@/lib/utils";
 import type { Course } from "@/lib/types";
 
 export default async function StudentCoursePage({
@@ -102,12 +102,7 @@ export default async function StudentCoursePage({
               >
                 <div>
                   <p className="text-sm font-medium text-ink">
-                    {new Date(s.session_date).toLocaleDateString("en-IN", {
-                      weekday: "short",
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {formatSessionDate(s.session_date)}
                   </p>
                   {s.label && (
                     <p className="text-xs text-muted mt-0.5">{s.label}</p>

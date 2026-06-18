@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button, Card, Input, Label } from "@/components/ui";
-import { cn } from "@/lib/utils";
+import { cn, formatSessionDate } from "@/lib/utils";
 import type { Course, Enrollment, Session } from "@/lib/types";
 
 type Tab = "roster" | "sessions" | "settings";
@@ -48,12 +48,23 @@ export function CourseManager({
     router.refresh();
   }
 
+  const [showSessionForm, setShowSessionForm] = useState(false);
+  const [newSessionDate, setNewSessionDate] = useState(
+    () => new Date().toISOString().slice(0, 10)
+  );
+  const [newSessionLabel, setNewSessionLabel] = useState("");
+  const [creatingSession, setCreatingSession] = useState(false);
+
   async function createSession() {
+    setCreatingSession(true);
     await supabase.from("sessions").insert({
       course_id: course.id,
-      session_date: new Date().toISOString().slice(0, 10),
-      label: null,
+      session_date: newSessionDate,
+      label: newSessionLabel.trim() || null,
     });
+    setCreatingSession(false);
+    setShowSessionForm(false);
+    setNewSessionLabel("");
     router.refresh();
   }
 
@@ -218,10 +229,59 @@ export function CourseManager({
             <h2 className="text-sm font-semibold text-ink">
               Attendance sessions
             </h2>
-            <Button onClick={createSession} className="!py-2 !px-3 text-xs">
-              + New session (today)
-            </Button>
+            {!showSessionForm && (
+              <Button
+                onClick={() => setShowSessionForm(true)}
+                className="!py-2 !px-3 text-xs"
+              >
+                + New session
+              </Button>
+            )}
           </div>
+
+          {showSessionForm && (
+            <Card className="p-4 mb-4">
+              <div className="flex flex-wrap items-end gap-3">
+                <div>
+                  <Label htmlFor="sessionDate">Date</Label>
+                  <Input
+                    id="sessionDate"
+                    type="date"
+                    value={newSessionDate}
+                    onChange={(e) => setNewSessionDate(e.target.value)}
+                    className="!py-2"
+                  />
+                </div>
+                <div className="flex-1 min-w-[160px]">
+                  <Label htmlFor="sessionLabel">Label (optional)</Label>
+                  <Input
+                    id="sessionLabel"
+                    value={newSessionLabel}
+                    onChange={(e) => setNewSessionLabel(e.target.value)}
+                    placeholder="e.g. Lecture 5"
+                    className="!py-2"
+                  />
+                </div>
+                <Button
+                  onClick={createSession}
+                  disabled={creatingSession || !newSessionDate}
+                  className="!py-2 !px-3 text-xs"
+                >
+                  {creatingSession ? "Creating…" : "Create session"}
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowSessionForm(false)}
+                  className="!py-2 !px-3 text-xs"
+                >
+                  Cancel
+                </Button>
+              </div>
+              <p className="text-xs text-muted mt-2">
+                Pick any date — past dates are fine for backdated attendance.
+              </p>
+            </Card>
+          )}
 
           {sessions.length === 0 ? (
             <Card className="p-10 text-center">
@@ -236,12 +296,7 @@ export function CourseManager({
                   <Card className="p-4 flex items-center justify-between hover:border-brass/50 transition-colors">
                     <div>
                       <p className="text-sm font-medium text-ink">
-                        {new Date(s.session_date).toLocaleDateString("en-IN", {
-                          weekday: "short",
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        {formatSessionDate(s.session_date)}
                       </p>
                       {s.label && (
                         <p className="text-xs text-muted mt-0.5">{s.label}</p>
