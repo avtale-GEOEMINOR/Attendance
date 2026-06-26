@@ -133,7 +133,9 @@ export function AttendanceSheet({
                       {s.profiles?.full_name}
                     </p>
                     <p className="text-xs text-muted">
-                      {s.profiles?.enrollment_no ?? s.profiles?.email}
+                      {s.profiles?.roll_no ?? s.profiles?.email}
+                      {s.profiles?.year ? ` · ${s.profiles.year}` : ""}
+                      {s.profiles?.program ? ` · ${s.profiles.program}` : ""}
                     </p>
                   </div>
                 </div>

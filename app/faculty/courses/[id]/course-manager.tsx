@@ -254,7 +254,8 @@ export function CourseManager({
                       <p className="text-xs text-muted">
                         {e.profiles?.email}
                         {e.profiles?.program ? ` · ${e.profiles.program}` : ""}
-                        {e.profiles?.enrollment_no ? ` · ${e.profiles.enrollment_no}` : ""}
+                        {e.profiles?.year ? ` · ${e.profiles.year}` : ""}
+                        {e.profiles?.roll_no ? ` · Roll: ${e.profiles.roll_no}` : ""}
                       </p>
                     </div>
                     <div className="flex gap-2">
@@ -307,7 +308,7 @@ export function CourseManager({
                     <tr className="ledger-rule text-left text-xs uppercase tracking-wide text-muted">
                       <th className="px-4 py-3 font-medium">Roll No</th>
                       <th className="px-4 py-3 font-medium">Name</th>
-                      <th className="px-4 py-3 font-medium">Email</th>
+                      <th className="px-4 py-3 font-medium">Year</th>
                       <th className="px-4 py-3 font-medium">Program</th>
                       <th className="px-4 py-3 font-medium text-right">Attendance</th>
                     </tr>
@@ -327,7 +328,9 @@ export function CourseManager({
                           <td className="px-4 py-3 text-ink font-medium">
                             {e.profiles?.full_name}
                           </td>
-                          <td className="px-4 py-3 text-muted">{e.profiles?.email}</td>
+                          <td className="px-4 py-3 text-muted">
+                            {e.profiles?.year ?? "—"}
+                          </td>
                           <td className="px-4 py-3 text-muted">
                             {e.profiles?.program ?? "—"}
                           </td>
@@ -528,7 +531,7 @@ function SheetSettings({
           Paste a Google Sheet link shared as &quot;Anyone with the link can
           edit.&quot; You can import a roster from a tab named{" "}
           <code className="font-mono">Roster</code> (columns: Name, Email,
-          Program, Enrollment No) and export attendance to a new tab.
+          Program, Roll No) and export attendance to a new tab.
         </p>
         <Label htmlFor="sheetUrl">Sheet URL</Label>
         <Input

@@ -42,14 +42,15 @@ export async function POST(req: NextRequest) {
     profiles: {
       full_name: string | null;
       email: string | null;
-      enrollment_no: string | null;
+      roll_no: string | null;
+      year: string | null;
       program: string | null;
     };
   }
 
   const { data: enrollments } = await supabase
     .from("enrollments")
-    .select("student_id, roll_number, profiles(full_name, email, enrollment_no, program)")
+    .select("student_id, roll_number, profiles(full_name, email, roll_no, year, program)")
     .eq("course_id", courseId)
     .eq("status", "approved")
     .overrideTypes<EnrollmentWithProfile[]>();
@@ -78,9 +79,10 @@ export async function POST(req: NextRequest) {
   const header = [
     "Roll Number",
     "Name",
-    "Email",
-    "Enrollment No",
+    "Year",
     "Program",
+    "Roll No (College)",
+    "Email",
     ...sessions.map((s) => s.session_date),
     "Present",
     "Total",
@@ -101,9 +103,10 @@ export async function POST(req: NextRequest) {
     rows.push([
       e.roll_number ?? "",
       profile?.full_name ?? "",
-      profile?.email ?? "",
-      profile?.enrollment_no ?? "",
+      profile?.year ?? "",
       profile?.program ?? "",
+      profile?.roll_no ?? "",
+      profile?.email ?? "",
       ...attendanceCells,
       presentCount,
       sessions.length,

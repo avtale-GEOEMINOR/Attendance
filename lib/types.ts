@@ -8,7 +8,8 @@ export interface Profile {
   full_name: string;
   role: UserRole;
   program: string | null;
-  enrollment_no: string | null;
+  roll_no: string | null;
+  year: string | null;
   faculty_code: string | null;
   is_approved: boolean;
   created_at: string;

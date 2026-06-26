@@ -18,7 +18,8 @@ function SignupForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [program, setProgram] = useState("");
-  const [enrollmentNo, setEnrollmentNo] = useState("");
+  const [year, setYear] = useState<"FY" | "SY" | "TY" | "">("");
+  const [rollNo, setRollNo] = useState("");
   const [facultyCodeOverride, setFacultyCodeOverride] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +59,8 @@ function SignupForm() {
       full_name: fullName,
       role,
       program: role === "student" ? program || null : null,
-      enrollment_no: role === "student" ? enrollmentNo || null : null,
+      roll_no: role === "student" ? rollNo || null : null,
+      year: role === "student" ? year || null : null,
       faculty_code:
         role === "faculty"
           ? (facultyCode || generateFacultyCode(fullName)).toUpperCase()
@@ -181,20 +183,62 @@ function SignupForm() {
           {role === "student" && (
             <>
               <div>
-                <Label htmlFor="program">Program (optional)</Label>
-                <Input
+                <Label>Year</Label>
+                <div className="flex gap-2 mt-0.5">
+                  {(["FY", "SY", "TY"] as const).map((y) => (
+                    <button
+                      key={y}
+                      type="button"
+                      onClick={() => setYear(y)}
+                      className={cn(
+                        "flex-1 py-2.5 text-sm font-medium rounded-sm border transition-colors",
+                        year === y
+                          ? "bg-ink text-parchment border-ink"
+                          : "bg-paper text-muted border-line hover:border-ink/40 hover:text-ink"
+                      )}
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="program">Program</Label>
+                <select
                   id="program"
                   value={program}
                   onChange={(e) => setProgram(e.target.value)}
-                  placeholder="e.g. B.Tech CSE"
-                />
+                  className="w-full rounded-sm border border-line bg-paper px-3.5 py-2.5 text-sm text-ink focus:outline-2 focus:outline-offset-1 focus:outline-brass transition-colors"
+                >
+                  <option value="">Select your program</option>
+                  {[
+                    "BBA",
+                    "BBA IB",
+                    "BCA",
+                    "BBA(CA)",
+                    "BSc CS",
+                    "BSc IT",
+                    "BSc Cyber Security",
+                    "BSc CDS",
+                    "BSc DS",
+                    "BSc Anm",
+                    "BSc AIML",
+                    "BCOM",
+                  ].map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
               </div>
+
               <div>
-                <Label htmlFor="enrollmentNo">Enrollment number (optional)</Label>
+                <Label htmlFor="rollNo">Roll number (optional)</Label>
                 <Input
-                  id="enrollmentNo"
-                  value={enrollmentNo}
-                  onChange={(e) => setEnrollmentNo(e.target.value)}
+                  id="rollNo"
+                  value={rollNo}
+                  onChange={(e) => setRollNo(e.target.value)}
                   placeholder="e.g. 2023BCS045"
                 />
               </div>
